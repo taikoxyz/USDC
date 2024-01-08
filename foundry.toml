@@ -1,0 +1,11 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = '0.6.12'
+optimizer_runs = 10000000
+
+[etherscan]
+holesky = { key = "YOUR_ETHERSCAN_API_KEY", chain=17000,  url = "https://api-holesky.etherscan.io/api" }
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
