@@ -28,7 +28,7 @@ Proof of compliance: Deployed bytecode only differs in signature!
 
 Deployment scipt:
 ```shell
-forge script DeployUSDCScript --fork-url=https://rpc.katla.taiko.xyz/ -vvvv --broadcast
+forge script DeployUSDC --fork-url=https://rpc.katla.taiko.xyz/ -vvvv --broadcast
 ```
 
 Verification scipt for token:
