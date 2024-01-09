@@ -9,13 +9,16 @@ pragma experimental ABIEncoderV2;
 
 import {Script, console2} from "forge-std/Script.sol";
 import {FiatTokenProxy} from "../src/FiatTokenProxy/centre-tokens/contracts/v1/FiatTokenProxy.sol";
-import {FiatTokenV2_1} from "../src/FiatTokenV2_1/centre-tokens/contracts/v2/FiatTokenV2_1.sol";
+import {FiatTokenV1} from "../src/FiatToken/centre-tokens/contracts/v1/FiatTokenV1.sol";
+import {FiatTokenV2} from "../src/FiatToken/centre-tokens/contracts/v2/FiatTokenV2.sol";
+import {FiatTokenV2_1} from "../src/FiatToken/centre-tokens/contracts/v2/FiatTokenV2_1.sol";
+import {FiatTokenV2_2} from "../src/FiatToken/centre-tokens/contracts/v2/FiatTokenV2_2.sol";
 
 /// For more info see:
 /// https://github.com/circlefin/stablecoin-evm/blob/master/doc/bridged_USDC_standard.md#token-deployment
 contract DeployUSDC is Script {
     FiatTokenProxy proxyContract;
-    FiatTokenV2_1 fiatTokenV2_1;
+    FiatTokenV2_2 fiatTokenV2_2;
 
     address public masterMinter = vm.envAddress("MASTER_MINTER");
     address public proxyOwner = vm.envAddress("PROXY_OWNER");
@@ -40,23 +43,25 @@ contract DeployUSDC is Script {
         
         vm.startBroadcast(proxyOwnerPrivateKey);
 
-        fiatTokenV2_1 = new FiatTokenV2_1();
-        console2.log("Address of impl:", address(fiatTokenV2_1));
-        proxyContract = new FiatTokenProxy(address(fiatTokenV2_1));
+        fiatTokenV2_2 = new FiatTokenV2_2();
+        console2.log("Address of impl:", address(fiatTokenV2_2));
+        proxyContract = new FiatTokenProxy(address(fiatTokenV2_2));
         console2.log("Address of proxy:", address(proxyContract));
 
         //// These values are dummy values because we only rely on the implementation
         //// deployment for delegatecall logic, not for actual state storage.
-        fiatTokenV2_1.initialize("", "", "", 0, THROWAWAY_ADDRESS, THROWAWAY_ADDRESS, THROWAWAY_ADDRESS, THROWAWAY_ADDRESS);
-        fiatTokenV2_1.initializeV2("");
-        fiatTokenV2_1.initializeV2_1(THROWAWAY_ADDRESS);
+        fiatTokenV2_2.initialize("", "", "", 0, THROWAWAY_ADDRESS, THROWAWAY_ADDRESS, THROWAWAY_ADDRESS, THROWAWAY_ADDRESS);
+        fiatTokenV2_2.initializeV2("");
+        fiatTokenV2_2.initializeV2_1(THROWAWAY_ADDRESS);
+        fiatTokenV2_2.initializeV2_2(new address[](0), SYMBOL);
 
         vm.stopBroadcast();
 
         vm.startBroadcast(initializerPrivateKey);
         //// Do the V1 initialization
         console2.log("Initializing V1..");
-        FiatTokenV2_1(address(proxyContract)).initialize(
+        (, bytes memory retVal) = address(proxyContract).call(abi.encodeWithSelector(
+            FiatTokenV1.initialize.selector, 
             NAME,
             SYMBOL,
             CURRENCY,
@@ -65,18 +70,26 @@ contract DeployUSDC is Script {
             THROWAWAY_ADDRESS,
             THROWAWAY_ADDRESS,
             proxyOwner
+            )
         );
 
-        //// Do the V2 initialization
-        // console.log("Initializing V2...");
-        FiatTokenV2_1(address(proxyContract)).initializeV2(
+        (, retVal) = address(proxyContract).call(abi.encodeWithSelector(
+            FiatTokenV2.initializeV2.selector, 
             NAME
+            )
         );
 
-        // // Do the V2_1 initialization
-        // console.log("Initializing V2.1...");
-        FiatTokenV2_1(address(proxyContract)).initializeV2_1(
+        (, retVal) = address(proxyContract).call(abi.encodeWithSelector(
+            FiatTokenV2_1.initializeV2_1.selector, 
             THROWAWAY_ADDRESS
+            )
+        );
+
+        (, retVal) = address(proxyContract).call(abi.encodeWithSelector(
+            FiatTokenV2_2.initializeV2_2.selector, 
+            new address[](0),
+            SYMBOL
+            )
         );
         
         vm.stopBroadcast();

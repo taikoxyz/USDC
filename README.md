@@ -1,5 +1,47 @@
 ## Native USDC support
 
+### Deployed proxy contracts
+
+ARB Mainnet: https://arbiscan.io/address/0xaf88d065e77c8cc2239327c5edb3a432268e5831#code
+
+OP Mainnet: https://optimistic.etherscan.io/token/0x0b2c639c533813f4aa9d7837caf62653d097ff85#code
+
+Holesky (meant to be the 'native' - mock - USDC for Taiko's A6 testnet): https://holesky.etherscan.io/address/0x6436d7B483a35516F7cD19379a392Ce9bD0B2852#code
+
+Taiko A6: TBF
+
+Proof of compliance: Deployed bytecode only differs in signature!
+
+### Deployed implementation contracts
+
+ARB Mainnet: https://arbiscan.io/address/0x86E721b43d4ECFa71119Dd38c0f938A75Fdb57B3#code
+
+OP Mainnet: https://optimistic.etherscan.io/address/0xdEd3b9a8DBeDC2F9CB725B55d0E686A81E6d06dC#code
+
+Holesky (meant to be the 'native' - mock - USDC for Taiko's A6 testnet): https://holesky.etherscan.io/address/0xDB61fa2Da6E855a376AdB4f6754eF804bA7DD489#code
+
+Taiko A6: TBF
+
+Proof of compliance: Deployed bytecode only differs in signature!
+
+## Deployment and verification
+
+Deployment scipt:
+```shell
+forge script DeployUSDCScript --fork-url=https://rpc.katla.taiko.xyz/ -vvvv --broadcast
+```
+
+Verification scipt for token:
+```shell
+forge verify-contract CONTRACT_ADDRESS src/FiatToken/centre-tokens/contracts/v2/FiatTokenV2_2.sol:FiatTokenV2_2 --watch --verifier-url "https://blockscoutapi.katla.taiko.xyz/api?module=contract&action=verify" --verifier blockscout --chain-id 167008
+```
+
+Verification scipt for proxy (currently for proxy, blockscout having issues with automated verification, but manually, via the UI it works):
+```shell
+forge verify-contract PROXY_ADDRESS src/FiatTokenProxy/centre-tokens/contracts/v1/FiatTokenProxy.sol:FiatTokenProxy --watch --verifier-url "https://blockscoutapi.katla.taiko.xyz/api?module=contract&action=verify" --verifier blockscout --chain-id 167008 —-constructor-args “0xEa9cFC899E609F8d31b7111B716BB3C37Da0c198”
+```
+
+
 # Bridged USDC Standard
 
 For original document please click [here](https://github.com/circlefin/stablecoin-evm/blob/master/doc/bridged_USDC_standard.md).
@@ -27,18 +69,6 @@ module.exports = {
 
 
 Repo cloned from: https://vscode.blockscan.com/arbitrum-one/0xaf88d065e77c8cc2239327c5edb3a432268e5831
-
-
-### Integration with Taiko
-So the mechanism to plug this into Taiko bridge (on L2 obviously) would be the following.
-
-```shell
-1. Bridge (and tokenVault) is deployed with genesis on L2.
-2. Deploy contracts (proxy + AbstractFiatTokenV2) 
-  2.1. Call the proper initializers 
-  2.2. Grant ERC20Vault with minter role
-3. Set the proper address (of this token) in StablecoinHook.sol so that it identifies that it is a bridged token, but already pre-deployed. (Modifications shall be done in ERC20Vault.sol with special case)
-```
 
 
 # From original documentation:
