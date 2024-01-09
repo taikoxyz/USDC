@@ -8,7 +8,7 @@ OP Mainnet: https://optimistic.etherscan.io/token/0x0b2c639c533813f4aa9d7837caf6
 
 Holesky (meant to be the 'native' - mock - USDC for Taiko's A6 testnet): https://holesky.etherscan.io/address/0x6436d7B483a35516F7cD19379a392Ce9bD0B2852#code
 
-Taiko A6: TBF
+Taiko A6: https://blockscoutapi.katla.taiko.xyz/address/0xB6C1f33da0cd2679778C6B3aD5c421d4d4EE8E64/contracts#address-tabs
 
 Proof of compliance: Deployed bytecode only differs in signature!
 
@@ -20,7 +20,7 @@ OP Mainnet: https://optimistic.etherscan.io/address/0xdEd3b9a8DBeDC2F9CB725B55d0
 
 Holesky (meant to be the 'native' - mock - USDC for Taiko's A6 testnet): https://holesky.etherscan.io/address/0xDB61fa2Da6E855a376AdB4f6754eF804bA7DD489#code
 
-Taiko A6: TBF
+Taiko A6: https://blockscoutapi.katla.taiko.xyz/address/0xAc032D2aE041F132c94d0f660bC20051bBd77723/contracts#address-tabs
 
 Proof of compliance: Deployed bytecode only differs in signature!
 
