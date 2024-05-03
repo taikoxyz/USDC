@@ -14,6 +14,26 @@ import {FiatTokenV2} from "../src/FiatToken/centre-tokens/contracts/v2/FiatToken
 import {FiatTokenV2_1} from "../src/FiatToken/centre-tokens/contracts/v2/FiatTokenV2_1.sol";
 import {FiatTokenV2_2} from "../src/FiatToken/centre-tokens/contracts/v2/FiatTokenV2_2.sol";
 
+
+// Interface for facilitating the change from regular BridgedERC20 to the 'bridgedUSDC' tokens on L2.
+interface IERC20Vault {
+
+    struct CanonicalERC20 {
+        uint64 chainId;
+        address addr;
+        uint8 decimals;
+        string symbol;
+        string name;
+    }
+
+    function changeBridgedToken(
+        CanonicalERC20 calldata _ctoken,
+        address _btokenNew
+    )
+        external
+        returns (address btokenOld_);
+}
+
 /// For more info see:
 /// https://github.com/circlefin/stablecoin-evm/blob/master/doc/bridged_USDC_standard.md#token-deployment
 contract DeployUSDC is Script {
@@ -34,6 +54,12 @@ contract DeployUSDC is Script {
     string constant SYMBOL = "USDC";
     string constant CURRENCY = "USD";
     uint8 constant DECIMALS = 6;
+
+    // Variables related to changeBridgedToken()
+    //Private key, who is allowed to call changeBridgedToken()
+    uint256 public erc20VaultChangeBridgePrivateyKey = vm.envUint("CHANGE_BRIDGE_TOKEN_PRIVATE_KEY");
+    address public erc20VaultL2 = vm.envAddress("ERC_20_VAULT");
+    address public constant USDC_ON_ETHEREUM = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
     function setUp() public {}
 
@@ -92,6 +118,36 @@ contract DeployUSDC is Script {
             )
         );
         
+        vm.stopBroadcast();
+
+
+        vm.startBroadcast(initializerPrivateKey);
+        require(erc20VaultL2 != address(0), "invalid params");
+
+        IERC20Vault vault = IERC20Vault(erc20VaultL2);
+        address currBridgedtoken = vault.canonicalToBridged(1, USDC_ON_ETHEREUM);
+        console2.log("current btoken for usdc:", currBridgedtoken);
+
+        vault.changeBridgedToken(
+            IERC20Vault.CanonicalERC20({
+                chainId: 1,
+                addr: USDC_ON_ETHEREUM,
+                decimals: 6,
+                symbol: "USDC",
+                name: "USD Coin"
+            }),
+            address(proxyContract)
+        );
+        if (vault.paused()) {
+            vault.unpause();
+        }
+        vm.stopBroadcast();
+
+        address newBridgedToken = vault.canonicalToBridged(1, USDC_ON_ETHEREUM);
+        console2.log("new btoken for usdc:", newBridgedToken);
+
+        require(address(proxyContract) == newBridgedToken, "unexpected result");
+
         vm.stopBroadcast();
     }
 }
