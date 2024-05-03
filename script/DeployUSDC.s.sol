@@ -125,8 +125,6 @@ contract DeployUSDC is Script {
         require(erc20VaultL2 != address(0), "invalid params");
 
         IERC20Vault vault = IERC20Vault(erc20VaultL2);
-        address currBridgedtoken = vault.canonicalToBridged(1, USDC_ON_ETHEREUM);
-        console2.log("current btoken for usdc:", currBridgedtoken);
 
         vault.changeBridgedToken(
             IERC20Vault.CanonicalERC20({
@@ -138,16 +136,6 @@ contract DeployUSDC is Script {
             }),
             address(proxyContract)
         );
-        if (vault.paused()) {
-            vault.unpause();
-        }
-        vm.stopBroadcast();
-
-        address newBridgedToken = vault.canonicalToBridged(1, USDC_ON_ETHEREUM);
-        console2.log("new btoken for usdc:", newBridgedToken);
-
-        require(address(proxyContract) == newBridgedToken, "unexpected result");
-
         vm.stopBroadcast();
     }
 }
