@@ -13,11 +13,10 @@ import {FiatTokenV1} from "../src/FiatToken/centre-tokens/contracts/v1/FiatToken
 import {FiatTokenV2} from "../src/FiatToken/centre-tokens/contracts/v2/FiatTokenV2.sol";
 import {FiatTokenV2_1} from "../src/FiatToken/centre-tokens/contracts/v2/FiatTokenV2_1.sol";
 import {FiatTokenV2_2} from "../src/FiatToken/centre-tokens/contracts/v2/FiatTokenV2_2.sol";
-
+import {Ownable} from "../src/FiatToken/centre-tokens/contracts/v1/Ownable.sol";
 
 // Interface for facilitating the change from regular BridgedERC20 to the 'bridgedUSDC' tokens on L2.
 interface IERC20Vault {
-
     struct CanonicalERC20 {
         uint64 chainId;
         address addr;
@@ -26,10 +25,7 @@ interface IERC20Vault {
         string name;
     }
 
-    function changeBridgedToken(
-        CanonicalERC20 calldata _ctoken,
-        address _btokenNew
-    )
+    function changeBridgedToken(CanonicalERC20 calldata _ctoken, address _btokenNew)
         external
         returns (address btokenOld_);
 }
@@ -40,12 +36,14 @@ contract DeployUSDC is Script {
     FiatTokenProxy proxyContract;
     FiatTokenV2_2 fiatTokenV2_2;
 
-    address public masterMinter = vm.envAddress("MASTER_MINTER");
-    address public proxyOwner = vm.envAddress("PROXY_OWNER");
-
-    uint256 public proxyOwnerPrivateKey = vm.envUint("PROXY_OWNER_PRIVATE_KEY");
-    //Proxy owner cannot call impl contract
-    uint256 public initializerPrivateKey = vm.envUint("INITIALIZER_PRIVATE_KEY");
+    // L2_OWNER: 0xf8ff2AF0DC1D5BA4811f22aCb02936A1529fd2Be
+    address public owner = vm.envAddress("OWNER");
+    // L2_DEPLOYER_ADDRESS:
+    address public proxyDeployer = vm.envAddress("PROXY_DEPLOYER");
+    // L2_DEPLOYER_PRIVATEKEY:
+    uint256 public proxyDeployerPrivateKey = vm.envUint("PROXY_DEPLOYER_PRIVATE_KEY");
+    // L2_ERC_20_VAULT: 0x1670000000000000000000000000000000000002
+    address public erc20VaultL2 = vm.envAddress("ERC_20_VAULT");
 
     address THROWAWAY_ADDRESS = 0x0000000000000000000000000000000000000001;
 
@@ -55,19 +53,13 @@ contract DeployUSDC is Script {
     string constant CURRENCY = "USD";
     uint8 constant DECIMALS = 6;
 
-    // Variables related to changeBridgedToken()
-    //Private key, who is allowed to call changeBridgedToken()
-    uint256 public erc20VaultChangeBridgePrivateyKey = vm.envUint("CHANGE_BRIDGE_TOKEN_PRIVATE_KEY");
-    address public erc20VaultL2 = vm.envAddress("ERC_20_VAULT");
-    address public constant USDC_ON_ETHEREUM = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-
     function setUp() public {}
 
     function run() public {
-        require(proxyOwner != address(0), "proxy owner is zero");
-        require(masterMinter != address(0), "minter admin is zero");
-        
-        vm.startBroadcast(proxyOwnerPrivateKey);
+        require(proxyDeployer != address(0), "proxy deployer is zero");
+        require(owner != address(0), "owner is zero");
+
+        vm.startBroadcast(proxyDeployerPrivateKey);
 
         fiatTokenV2_2 = new FiatTokenV2_2();
         console2.log("Address of impl:", address(fiatTokenV2_2));
@@ -76,66 +68,49 @@ contract DeployUSDC is Script {
 
         //// These values are dummy values because we only rely on the implementation
         //// deployment for delegatecall logic, not for actual state storage.
-        fiatTokenV2_2.initialize("", "", "", 0, THROWAWAY_ADDRESS, THROWAWAY_ADDRESS, THROWAWAY_ADDRESS, THROWAWAY_ADDRESS);
+        fiatTokenV2_2.initialize(
+            "", "", "", 0, THROWAWAY_ADDRESS, THROWAWAY_ADDRESS, THROWAWAY_ADDRESS, THROWAWAY_ADDRESS
+        );
         fiatTokenV2_2.initializeV2("");
         fiatTokenV2_2.initializeV2_1(THROWAWAY_ADDRESS);
         fiatTokenV2_2.initializeV2_2(new address[](0), SYMBOL);
 
-        vm.stopBroadcast();
+        vm.startBroadcast(proxyDeployerPrivateKey);
 
-        vm.startBroadcast(initializerPrivateKey);
         //// Do the V1 initialization
         console2.log("Initializing V1..");
-        (, bytes memory retVal) = address(proxyContract).call(abi.encodeWithSelector(
-            FiatTokenV1.initialize.selector, 
-            NAME,
-            SYMBOL,
-            CURRENCY,
-            DECIMALS,
-            masterMinter,
-            THROWAWAY_ADDRESS,
-            THROWAWAY_ADDRESS,
-            proxyOwner
+        (, bytes memory retVal) = address(proxyContract).call(
+            abi.encodeWithSelector(
+                FiatTokenV1.initialize.selector,
+                NAME,
+                SYMBOL,
+                CURRENCY,
+                DECIMALS,
+                owner,
+                THROWAWAY_ADDRESS,
+                THROWAWAY_ADDRESS,
+                proxyDeployer
             )
         );
 
-        (, retVal) = address(proxyContract).call(abi.encodeWithSelector(
-            FiatTokenV2.initializeV2.selector, 
-            NAME
-            )
+        (, retVal) = address(proxyContract).call(
+            abi.encodeWithSelector(FiatTokenV1.configureMinter.selector, erc20VaultL2, type(uint256).max)
         );
 
-        (, retVal) = address(proxyContract).call(abi.encodeWithSelector(
-            FiatTokenV2_1.initializeV2_1.selector, 
-            THROWAWAY_ADDRESS
-            )
+        (, retVal) = address(proxyContract).call(abi.encodeWithSelector(FiatTokenV2.initializeV2.selector, NAME));
+
+        (, retVal) = address(proxyContract).call(
+            abi.encodeWithSelector(FiatTokenV2_1.initializeV2_1.selector, THROWAWAY_ADDRESS)
         );
 
-        (, retVal) = address(proxyContract).call(abi.encodeWithSelector(
-            FiatTokenV2_2.initializeV2_2.selector, 
-            new address[](0),
-            SYMBOL
-            )
+        (, retVal) = address(proxyContract).call(
+            abi.encodeWithSelector(FiatTokenV2_2.initializeV2_2.selector, new address[](0), SYMBOL)
         );
-        
-        vm.stopBroadcast();
 
-
-        vm.startBroadcast(initializerPrivateKey);
-        require(erc20VaultL2 != address(0), "invalid params");
-
-        IERC20Vault vault = IERC20Vault(erc20VaultL2);
-
-        vault.changeBridgedToken(
-            IERC20Vault.CanonicalERC20({
-                chainId: 1,
-                addr: USDC_ON_ETHEREUM,
-                decimals: 6,
-                symbol: "USDC",
-                name: "USD Coin"
-            }),
-            address(proxyContract)
+        (, retVal) = address(proxyContract).call(
+            abi.encodeWithSelector(Ownable.transferOwnership.selector, owner)
         );
+
         vm.stopBroadcast();
     }
 }
