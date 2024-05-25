@@ -55,12 +55,6 @@ contract DeployUSDC is Script {
     string constant CURRENCY = "USD";
     uint8 constant DECIMALS = 6;
 
-    // Variables related to changeBridgedToken()
-    //Private key, who is allowed to call changeBridgedToken()
-    uint256 public erc20VaultChangeBridgePrivateyKey = vm.envUint("CHANGE_BRIDGE_TOKEN_PRIVATE_KEY");
-    address public erc20VaultL2 = vm.envAddress("ERC_20_VAULT");
-    address public constant USDC_ON_ETHEREUM = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-
     function setUp() public {}
 
     function run() public {
@@ -118,24 +112,6 @@ contract DeployUSDC is Script {
             )
         );
         
-        vm.stopBroadcast();
-
-
-        vm.startBroadcast(initializerPrivateKey);
-        require(erc20VaultL2 != address(0), "invalid params");
-
-        IERC20Vault vault = IERC20Vault(erc20VaultL2);
-
-        vault.changeBridgedToken(
-            IERC20Vault.CanonicalERC20({
-                chainId: 1,
-                addr: USDC_ON_ETHEREUM,
-                decimals: 6,
-                symbol: "USDC",
-                name: "USD Coin"
-            }),
-            address(proxyContract)
-        );
         vm.stopBroadcast();
     }
 }
