@@ -40,8 +40,8 @@ contract DeployUSDC is Script {
     FiatTokenProxy proxyContract;
     FiatTokenV2_2 fiatTokenV2_2;
 
-    address public masterMinter = vm.envAddress("MASTER_MINTER");
-    address public proxyOwner = vm.envAddress("PROXY_OWNER");
+    address public masterMinter = 0xf8ff2AF0DC1D5BA4811f22aCb02936A1529fd2Be;
+    address public proxyOwner = 0xf8ff2AF0DC1D5BA4811f22aCb02936A1529fd2Be;
 
     uint256 public proxyOwnerPrivateKey = vm.envUint("PROXY_OWNER_PRIVATE_KEY");
     //Proxy owner cannot call impl contract
