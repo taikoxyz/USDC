@@ -40,8 +40,8 @@ contract DeployUSDC is Script {
     FiatTokenProxy proxyContract;
     FiatTokenV2_2 fiatTokenV2_2;
 
-    address public masterMinter = vm.envAddress("MASTER_MINTER");
-    address public proxyOwner = vm.envAddress("PROXY_OWNER");
+    address public masterMinter = 0xf8ff2AF0DC1D5BA4811f22aCb02936A1529fd2Be;
+    address public proxyOwner = 0xf8ff2AF0DC1D5BA4811f22aCb02936A1529fd2Be;
 
     uint256 public proxyOwnerPrivateKey = vm.envUint("PROXY_OWNER_PRIVATE_KEY");
     //Proxy owner cannot call impl contract
@@ -54,12 +54,6 @@ contract DeployUSDC is Script {
     string constant SYMBOL = "USDC";
     string constant CURRENCY = "USD";
     uint8 constant DECIMALS = 6;
-
-    // Variables related to changeBridgedToken()
-    //Private key, who is allowed to call changeBridgedToken()
-    uint256 public erc20VaultChangeBridgePrivateyKey = vm.envUint("CHANGE_BRIDGE_TOKEN_PRIVATE_KEY");
-    address public erc20VaultL2 = vm.envAddress("ERC_20_VAULT");
-    address public constant USDC_ON_ETHEREUM = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
     function setUp() public {}
 
@@ -118,24 +112,6 @@ contract DeployUSDC is Script {
             )
         );
         
-        vm.stopBroadcast();
-
-
-        vm.startBroadcast(initializerPrivateKey);
-        require(erc20VaultL2 != address(0), "invalid params");
-
-        IERC20Vault vault = IERC20Vault(erc20VaultL2);
-
-        vault.changeBridgedToken(
-            IERC20Vault.CanonicalERC20({
-                chainId: 1,
-                addr: USDC_ON_ETHEREUM,
-                decimals: 6,
-                symbol: "USDC",
-                name: "USD Coin"
-            }),
-            address(proxyContract)
-        );
         vm.stopBroadcast();
     }
 }
